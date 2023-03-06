@@ -17,7 +17,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	c, err := client.NewHttpClient()
+	c, err := client.NewHTTPClient()
 	if err != nil {
 		log.Fatal(err)
 	}

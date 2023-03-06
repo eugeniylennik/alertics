@@ -20,7 +20,7 @@ type Client struct {
 	*http.Client
 }
 
-func NewHttpClient() (*Client, error) {
+func NewHTTPClient() (*Client, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return &Client{}, err
