@@ -55,10 +55,11 @@ func (c *Client) SendMetrics(ctx context.Context, m []metrics.Data) error {
 			return err
 		}
 		req.Header.Set("Content-Type", "text/plain")
-		_, err = c.Do(req)
+		resp, err := c.Do(req)
 		if err != nil {
 			return err
 		}
+		defer resp.Body.Close()
 	}
 	return nil
 }
