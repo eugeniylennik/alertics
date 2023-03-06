@@ -22,15 +22,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ch := make(chan []metrics.Data, 0)
+	ch := make(chan []metrics.Data)
 
-	go CollectMetrics(ctx, ch)
-	go SendMetrics(ctx, c, ch)
+	go collectMetrics(ctx, ch)
+	go sendMetrics(ctx, c, ch)
 
 	<-ctx.Done()
 }
 
-func CollectMetrics(ctx context.Context, ch chan []metrics.Data) {
+func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
 	tPool := time.NewTicker(pollInterval)
 	defer tPool.Stop()
 
@@ -44,7 +44,7 @@ func CollectMetrics(ctx context.Context, ch chan []metrics.Data) {
 	}
 }
 
-func SendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
+func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
 	tReport := time.NewTicker(reportInterval)
 	defer tReport.Stop()
 
