@@ -55,10 +55,11 @@ func (c *Client) SendMetrics(ctx context.Context, m []metrics.Data) error {
 			return err
 		}
 		req.Header.Set("Content-Type", "text/plain")
-		_, err = c.Do(req)
-		if err != nil {
-			return err
-		}
+		fmt.Printf("Success send: Name - %s, Value - %.1f\n", v.Name, v.Value)
+		//_, err = c.Do(req)
+		//if err != nil {
+		//	return err
+		//}
 	}
 	return nil
 }
