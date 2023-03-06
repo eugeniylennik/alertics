@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - feature/first_increment
+      - iter1
 
 jobs:
 
