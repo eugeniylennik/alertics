@@ -54,9 +54,9 @@ func TestHandler_RecordMetrics(t *testing.T) {
 				fmt.Sprintf("/update/%s/%s/%.2f", tt.target.Type, tt.target.Name, tt.target.Value),
 				nil,
 			)
-			//h.RecordMetrics(tt.args.w, tt.args.r)
 			//создаем новый Recorder
 			w := httptest.NewRecorder()
+
 			//определяем хэндлер
 			h := NewStorage()
 
