@@ -8,11 +8,11 @@ import (
 	"strings"
 )
 
-type Handler struct {
+type Storage struct {
 	storage.MemStorage
 }
 
-func (h *Handler) RecordMetrics(w http.ResponseWriter, r *http.Request) {
+func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -37,7 +37,7 @@ func (h *Handler) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 		Value: v,
 	}
 
-	if err := h.Record(m); err != nil {
+	if err := s.Record(m); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -46,8 +46,8 @@ func (h *Handler) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func NewHandler() Handler {
-	return Handler{
+func NewStorage() Storage {
+	return Storage{
 		storage.NewRepository(),
 	}
 }

@@ -16,7 +16,7 @@ func main() {
 		Addr: "localhost:8080",
 	}
 
-	h := handlers.NewHandler()
+	h := handlers.NewStorage()
 	http.HandleFunc("/update/", h.RecordMetrics)
 
 	go func() {
