@@ -21,7 +21,7 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(path, "/")
 
 	if len(parts) != 3 {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -35,6 +35,11 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 		Type:  parts[0],
 		Name:  parts[1],
 		Value: v,
+	}
+
+	if m.Type != "gauge" || m.Type != "counter" {
+		w.WriteHeader(http.StatusNotImplemented)
+		return
 	}
 
 	if err := s.Record(m); err != nil {
