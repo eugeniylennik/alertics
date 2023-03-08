@@ -37,7 +37,7 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 		Value: v,
 	}
 
-	if m.Type != "gauge" || m.Type != "counter" {
+	if m.Type != "gauge" && m.Type != "counter" {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
