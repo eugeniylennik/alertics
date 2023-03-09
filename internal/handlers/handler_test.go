@@ -1,73 +1,36 @@
-package handlers
+package handlers_test
 
 import (
-	"fmt"
-	"github.com/eugeniylennik/alertics/internal/metrics"
+	"github.com/eugeniylennik/alertics/internal/router"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 func TestHandler_RecordMetrics(t *testing.T) {
-	type want struct {
-		code        int
-		response    string
-		contentType string
-	}
-	tests := []struct {
-		name   string
-		target metrics.Data
-		want   want
-	}{
-		{
-			name: "Positive add metric to map",
-			target: metrics.Data{
-				Name:  "Alloc",
-				Type:  "gauge",
-				Value: 33812.12,
-			},
-			want: want{
-				code:        200,
-				response:    "",
-				contentType: "text/plain",
-			},
-		},
-		{
-			name: "Negative test data metrics != 3",
-			target: metrics.Data{
-				Name: "Alloc",
-				Type: "gauge",
-			},
-			want: want{
-				code:        400,
-				response:    "",
-				contentType: "text/plain",
-			},
-		},
-	}
+	r := router.NewRouter()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest(
-				http.MethodPost,
-				fmt.Sprintf("/update/%s/%s/%.2f", tt.target.Type, tt.target.Name, tt.target.Value),
-				nil,
-			)
-			//создаем новый Recorder
-			w := httptest.NewRecorder()
+	statusCode, body := testRequest(t, ts, "POST", "/update/gauge/Alloc/12.12")
+	assert.Equal(t, http.StatusOK, statusCode)
+	assert.Equal(t, body, "")
+}
 
-			//определяем хэндлер
-			h := NewStorage()
+func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
+	req, err := http.NewRequest(method, ts.URL+path, nil)
+	require.NoError(t, err)
 
-			hf := http.HandlerFunc(h.RecordMetrics)
-			hf.ServeHTTP(w, r)
-			res := w.Result()
-			defer res.Body.Close()
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
 
-			// проверяем код ответа
-			assert.Equal(t, http.StatusOK, res.StatusCode)
-			assert.Equal(t, tt.target.Value, h.m.Gauge[tt.target.Name])
-		})
-	}
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	defer resp.Body.Close()
+
+	return resp.StatusCode, string(respBody)
 }

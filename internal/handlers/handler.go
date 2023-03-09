@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"github.com/go-chi/chi/v5"
@@ -14,7 +13,7 @@ type Storage struct {
 	m *storage.MemStorage
 }
 
-type ApiResponse struct {
+type APIResponse struct {
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
@@ -51,7 +50,6 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	typeMetric := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
 
@@ -61,11 +59,6 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 		v, ok := s.m.Gauge[name]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
-			b, _ := json.Marshal(
-				ApiResponse{
-					Message: fmt.Sprintf("Name %s is not found", name),
-				})
-			w.Write(b)
 			return
 		}
 		value = v
@@ -73,30 +66,16 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 		v, ok := s.m.Counter[name]
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
-			b, _ := json.Marshal(
-				ApiResponse{
-					Message: fmt.Sprintf("Name %s is not found", name),
-				})
-			w.Write(b)
 			return
 		}
 		value = float64(v)
 	default:
 		w.WriteHeader(http.StatusNotFound)
-		b, _ := json.Marshal(ApiResponse{Message: fmt.Sprintf("Type %s is not found", typeMetric)})
-		w.Write(b)
 		return
 	}
 
-	result := struct {
-		Name  string
-		Value float64
-	}{
-		Name:  name,
-		Value: value,
-	}
+	b, _ := json.Marshal(value)
 
-	b, _ := json.Marshal(result)
 	w.WriteHeader(http.StatusOK)
 	w.Write(b)
 }
