@@ -67,7 +67,7 @@ func TestHandler_RecordMetrics(t *testing.T) {
 
 			// проверяем код ответа
 			assert.Equal(t, http.StatusOK, res.StatusCode)
-			assert.Equal(t, tt.target.Value, h.Gauge[tt.target.Name])
+			assert.Equal(t, tt.target.Value, h.m.Gauge[tt.target.Name])
 		})
 	}
 }

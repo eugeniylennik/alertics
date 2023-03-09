@@ -1,54 +1,111 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 type Storage struct {
-	storage.MemStorage
+	m *storage.MemStorage
+}
+
+type ApiResponse struct {
+	Message string      `json:"message,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	path := r.URL.Path[len("/update/"):]
-	parts := strings.Split(path, "/")
+	typeMetric := chi.URLParam(r, "type")
+	name := chi.URLParam(r, "name")
+	value := chi.URLParam(r, "value")
 
-	if len(parts) != 3 {
-		w.WriteHeader(http.StatusNotFound)
+	if typeMetric != "gauge" && typeMetric != "counter" {
+		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
 
-	v, err := strconv.ParseFloat(parts[2], 64)
+	v, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	m := metrics.Data{
-		Type:  parts[0],
-		Name:  parts[1],
+		Type:  typeMetric,
+		Name:  name,
 		Value: v,
 	}
 
-	if m.Type != "gauge" && m.Type != "counter" {
-		w.WriteHeader(http.StatusNotImplemented)
-		return
-	}
-
-	if err := s.Record(m); err != nil {
+	if err := s.m.AddMetrics(m); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	typeMetric := chi.URLParam(r, "type")
+	name := chi.URLParam(r, "name")
+
+	var value float64
+	switch typeMetric {
+	case storage.Gauge:
+		v, ok := s.m.Gauge[name]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			b, _ := json.Marshal(
+				ApiResponse{
+					Message: fmt.Sprintf("Name %s is not found", name),
+				})
+			w.Write(b)
+			return
+		}
+		value = v
+	case storage.Counter:
+		v, ok := s.m.Counter[name]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			b, _ := json.Marshal(
+				ApiResponse{
+					Message: fmt.Sprintf("Name %s is not found", name),
+				})
+			w.Write(b)
+			return
+		}
+		value = float64(v)
+	default:
+		w.WriteHeader(http.StatusNotFound)
+		b, _ := json.Marshal(ApiResponse{Message: fmt.Sprintf("Type %s is not found", typeMetric)})
+		w.Write(b)
+		return
+	}
+
+	result := struct {
+		Name  string
+		Value float64
+	}{
+		Name:  name,
+		Value: value,
+	}
+
+	b, _ := json.Marshal(result)
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
+}
+
+func (s *Storage) GetMetrics(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	b, _ := json.Marshal(s.m)
+	w.WriteHeader(http.StatusOK)
+	w.Write(b)
 }
 
 func NewStorage() Storage {

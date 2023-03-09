@@ -1,51 +1,42 @@
 package main
 
 import (
-	"context"
 	"github.com/eugeniylennik/alertics/internal/handlers"
+	"github.com/eugeniylennik/alertics/internal/server"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func main() {
+	r := NewRouter()
 	s := &http.Server{
-		Addr: "localhost:8080",
+		Addr:    "localhost:8080",
+		Handler: r,
 	}
-
-	h := handlers.NewStorage()
-	http.HandleFunc("/update/", h.RecordMetrics)
-
 	go func() {
 		if err := s.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("HTTP server ListenAndServe Error %v", err)
 		}
 	}()
-
-	shutdownServer(s)
+	server.ShutdownServer(s)
 }
 
-func shutdownServer(s *http.Server) {
-	signalChan := make(chan os.Signal, 1)
-
-	signal.Notify(
-		signalChan,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGQUIT,
-	)
-
-	<-signalChan
-	ctx, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancelShutdown()
-
-	if err := s.Shutdown(ctx); err != nil {
-		log.Printf("HTTP server shutdown error: %v\n", err)
-		os.Exit(1)
-	} else {
-		log.Printf("HTTP server gracefully stopped\n")
-	}
+func NewRouter() chi.Router {
+	r := chi.NewRouter()
+	h := handlers.NewStorage()
+	r.Use(middleware.DefaultLogger)
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Route("/update", func(r chi.Router) {
+		r.Post("/{type}/{name}/{value}", h.RecordMetrics)
+	})
+	r.Get("/", h.GetMetrics)
+	r.Route("/value", func(r chi.Router) {
+		r.Get("/{type}/{name}", h.GetSpecificMetric)
+	})
+	return r
 }
