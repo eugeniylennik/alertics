@@ -14,7 +14,7 @@ type Storage struct {
 	m *storage.MemStorage
 }
 
-type APIResponse struct {
+type ApiResponse struct {
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 }
@@ -62,7 +62,7 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			b, _ := json.Marshal(
-				APIResponse{
+				ApiResponse{
 					Message: fmt.Sprintf("Name %s is not found", name),
 				})
 			w.Write(b)
@@ -74,7 +74,7 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			b, _ := json.Marshal(
-				APIResponse{
+				ApiResponse{
 					Message: fmt.Sprintf("Name %s is not found", name),
 				})
 			w.Write(b)
@@ -83,7 +83,7 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 		value = float64(v)
 	default:
 		w.WriteHeader(http.StatusNotFound)
-		b, _ := json.Marshal(APIResponse{Message: fmt.Sprintf("Type %s is not found", typeMetric)})
+		b, _ := json.Marshal(ApiResponse{Message: fmt.Sprintf("Type %s is not found", typeMetric)})
 		w.Write(b)
 		return
 	}
