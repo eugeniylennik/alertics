@@ -10,12 +10,7 @@ import (
 )
 
 type Storage struct {
-	m *storage.MemStorage
-}
-
-type APIResponse struct {
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
+	storage.Repository
 }
 
 func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +18,7 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	value := chi.URLParam(r, "value")
 
-	if typeMetric != "gauge" && typeMetric != "counter" {
+	if typeMetric != storage.Gauge && typeMetric != storage.Counter {
 		w.WriteHeader(http.StatusNotImplemented)
 		return
 	}
@@ -40,9 +35,11 @@ func (s *Storage) RecordMetrics(w http.ResponseWriter, r *http.Request) {
 		Value: v,
 	}
 
-	if err := s.m.AddMetrics(m); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	switch typeMetric {
+	case storage.Gauge:
+		_ = s.AddGauge(m)
+	case storage.Counter:
+		_ = s.AddCounter(m)
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
@@ -53,42 +50,53 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 	typeMetric := chi.URLParam(r, "type")
 	name := chi.URLParam(r, "name")
 
-	var value float64
 	switch typeMetric {
 	case storage.Gauge:
-		v, ok := s.m.Gauge[name]
-		if !ok {
+		v, err := s.GetGauge(name)
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		value = v
+		b, err := json.Marshal(v)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(b)
 	case storage.Counter:
-		v, ok := s.m.Counter[name]
-		if !ok {
+		v, err := s.GetCounter(name)
+		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		value = float64(v)
+		b, err := json.Marshal(v)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write(b)
 	default:
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
-
-	b, _ := json.Marshal(value)
-
-	w.WriteHeader(http.StatusOK)
-	w.Write(b)
 }
 
 func (s *Storage) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	b, _ := json.Marshal(s.m)
+	m := s.GetAllMetrics()
+	b, err := json.Marshal(m)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(b)
 }
 
-func NewStorage() Storage {
-	return Storage{
-		storage.NewRepository(),
+func NewHandler(r storage.Repository) *Storage {
+	return &Storage{
+		r,
 	}
 }

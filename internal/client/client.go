@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"net/http"
@@ -38,7 +37,7 @@ func NewHTTPClient() (*Client, error) {
 
 func (c *Client) SendMetrics(ctx context.Context, m []metrics.Data) error {
 	if len(m) == 0 {
-		return errors.New("empty metrics")
+		return nil
 	}
 	for _, v := range m {
 		addr := url.URL{
@@ -55,11 +54,10 @@ func (c *Client) SendMetrics(ctx context.Context, m []metrics.Data) error {
 			return err
 		}
 		req.Header.Set("Content-Type", "text/plain")
-		resp, err := c.Do(req)
+		_, err = c.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
 	}
 	return nil
 }

@@ -54,12 +54,10 @@ func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) 
 		case newM := <-ch:
 			m = newM
 		case <-tReport.C:
-			if len(m) > 0 {
-				if err := c.SendMetrics(ctx, m); err != nil {
-					log.Fatal(err)
-				}
-				m = nil
+			if err := c.SendMetrics(ctx, m); err != nil {
+				log.Fatal(err)
 			}
+			m = nil
 		case <-ctx.Done():
 			return
 		}
