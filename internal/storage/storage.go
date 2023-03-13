@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
@@ -32,7 +33,7 @@ type Repository interface {
 	AddCounter(m metrics.Data) error
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
-	GetAllMetrics() *MemStorage
+	GetAllMetrics() ([]byte, error)
 }
 
 func (s *Storage) AddGauge(m metrics.Data) error {
@@ -69,6 +70,27 @@ func (s *Storage) GetCounter(name string) (int64, error) {
 	return v, nil
 }
 
-func (s *Storage) GetAllMetrics() *MemStorage {
-	return s.MemStorage
+func (s *Storage) GetAllMetrics() ([]byte, error) {
+	m := &MemStorage{
+		map[string]float64{},
+		map[string]int64{},
+	}
+	for k, v := range s.MemStorage.gauge {
+		m.gauge[k] = v
+	}
+	for k, v := range s.MemStorage.counter {
+		m.counter[k] = v
+	}
+
+	b, err := json.Marshal(struct {
+		Gauge   map[string]float64
+		Counter map[string]int64
+	}{
+		Gauge:   m.gauge,
+		Counter: m.counter,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
 }

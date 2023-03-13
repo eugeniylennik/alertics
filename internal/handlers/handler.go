@@ -85,14 +85,13 @@ func (s *Storage) GetSpecificMetric(w http.ResponseWriter, r *http.Request) {
 
 func (s *Storage) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	m := s.GetAllMetrics()
-	b, err := json.Marshal(m)
+	m, err := s.GetAllMetrics()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	w.Write(b)
+	w.Write(m)
 }
 
 func NewHandler(r storage.Repository) *Storage {
