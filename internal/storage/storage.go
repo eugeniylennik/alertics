@@ -15,70 +15,56 @@ type MemStorage struct {
 	counter map[string]int64
 }
 
-func NewMemStorage() Repository {
-	return &Storage{
-		&MemStorage{
-			gauge:   map[string]float64{},
-			counter: map[string]int64{},
-		},
+func NewMemStorage() *MemStorage {
+	return &MemStorage{
+		gauge:   map[string]float64{},
+		counter: map[string]int64{},
 	}
 }
 
-type Storage struct {
-	*MemStorage
-}
-
-type Repository interface {
-	AddGauge(m metrics.Data) error
-	AddCounter(m metrics.Data) error
-	GetGauge(name string) (float64, error)
-	GetCounter(name string) (int64, error)
-	GetAllMetrics() ([]byte, error)
-}
-
-func (s *Storage) AddGauge(m metrics.Data) error {
+func (ms *MemStorage) AddGauge(m metrics.Data) error {
 	if m.Type == Gauge {
-		s.gauge[m.Name] = m.Value
+		ms.gauge[m.Name] = m.Value
 	} else {
 		return errors.New("invalid metric type")
 	}
 	return nil
 }
 
-func (s *Storage) AddCounter(m metrics.Data) error {
+func (ms *MemStorage) AddCounter(m metrics.Data) error {
 	if m.Type == Counter {
-		s.counter[m.Name] += int64(m.Value)
+		ms.counter[m.Name] += int64(m.Value)
 	} else {
 		return errors.New("invalid metric type")
 	}
 	return nil
 }
 
-func (s *Storage) GetGauge(name string) (float64, error) {
-	v, ok := s.gauge[name]
+func (ms *MemStorage) GetGauge(name string) (float64, error) {
+	v, ok := ms.gauge[name]
 	if !ok {
 		return 0, fmt.Errorf("metric %s not found", name)
 	}
 	return v, nil
 }
 
-func (s *Storage) GetCounter(name string) (int64, error) {
-	v, ok := s.counter[name]
+func (ms *MemStorage) GetCounter(name string) (int64, error) {
+	v, ok := ms.counter[name]
 	if !ok {
 		return 0, fmt.Errorf("metric %s not found", name)
 	}
 	return v, nil
 }
 
-func (s *Storage) GetAllMetrics() ([]byte, error) {
+func (ms *MemStorage) GetAllMetrics() ([]byte, error) {
 	m := &MemStorage{
 		map[string]float64{},
 		map[string]int64{},
 	}
-	for k, v := range s.MemStorage.gauge {
+	for k, v := range ms.gauge {
 		m.gauge[k] = v
 	}
-	for k, v := range s.MemStorage.counter {
+	for k, v := range ms.counter {
 		m.counter[k] = v
 	}
 

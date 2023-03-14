@@ -10,18 +10,17 @@ import (
 func NewRouter() chi.Router {
 	r := chi.NewRouter()
 	m := storage.NewMemStorage()
-	h := handlers.NewHandler(m)
 	r.Use(middleware.DefaultLogger)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Get("/", h.GetMetrics)
+	r.Get("/", handlers.GetMetrics(m))
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/{type}/{name}/{value}", h.RecordMetrics)
+		r.Post("/{type}/{name}/{value}", handlers.RecordMetrics(m))
 	})
 	r.Route("/value", func(r chi.Router) {
-		r.Get("/{type}/{name}", h.GetSpecificMetric)
+		r.Get("/{type}/{name}", handlers.GetSpecificMetric(m))
 	})
 	return r
 }

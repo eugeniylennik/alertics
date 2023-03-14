@@ -5,6 +5,9 @@ import (
 	"github.com/eugeniylennik/alertics/internal/client"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -15,7 +18,6 @@ const (
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	c, err := client.NewHTTPClient()
 	if err != nil {
@@ -27,7 +29,14 @@ func main() {
 	go collectMetrics(ctx, ch)
 	go sendMetrics(ctx, c, ch)
 
-	<-ctx.Done()
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-s:
+		cancel()
+	case <-ctx.Done():
+	}
 }
 
 func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
