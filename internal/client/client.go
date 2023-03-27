@@ -1,9 +1,10 @@
 package client
 
 import (
-	"context"
-	"fmt"
+	"bytes"
+	"encoding/json"
 	"github.com/eugeniylennik/alertics/internal/metrics"
+	"log"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -35,30 +36,39 @@ func NewHTTPClient() (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SendMetrics(ctx context.Context, m []metrics.Data) error {
+func (c *Client) SendMetrics(m metrics.ListMetrics) error {
 	if len(m) == 0 {
 		return nil
 	}
+	addr := url.URL{
+		Scheme: "http",
+		Host:   host + ":" + port,
+		Path:   "/update/",
+	}
 	for _, v := range m {
-		addr := url.URL{
-			Scheme: "http",
-			Host:   host + ":" + port,
-			Path:   fmt.Sprintf("/update/%s/%s/%.1f", v.Type, v.Name, v.Value),
+		b, err := json.Marshal(v)
+		if err != nil {
+			return err
 		}
 		req, err := http.NewRequest(
 			http.MethodPost,
 			addr.String(),
-			nil,
+			bytes.NewBuffer(b),
 		)
 		if err != nil {
 			return err
 		}
-		req.Header.Set("Content-Type", "text/plain")
+		req.Header.Set("Content-Type", "application/json")
 		resp, err := c.Do(req)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("error closing response body: %v", err)
+			}
+		}()
 	}
+
 	return nil
 }

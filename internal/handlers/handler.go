@@ -4,67 +4,70 @@ import (
 	"encoding/json"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
-	"github.com/go-chi/chi/v5"
 	"net/http"
-	"strconv"
 )
 
 type Repository interface {
-	AddGauge(m metrics.Data) error
-	AddCounter(m metrics.Data) error
+	AddGauge(m metrics.Metrics) error
+	AddCounter(m metrics.Metrics) error
 	GetGauge(name string) (float64, error)
 	GetCounter(name string) (int64, error)
 	GetAllMetrics() ([]byte, error)
 }
 
+func MiddlewareJson(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		next.ServeHTTP(w, r)
+	}
+}
+
 func RecordMetrics(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		typeMetric := chi.URLParam(r, "type")
-		name := chi.URLParam(r, "name")
-		value := chi.URLParam(r, "value")
-
-		if typeMetric != storage.Gauge && typeMetric != storage.Counter {
-			w.WriteHeader(http.StatusNotImplemented)
-			return
+		var m metrics.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
-
-		v, err := strconv.ParseFloat(value, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		m := metrics.Data{
-			Type:  typeMetric,
-			Name:  name,
-			Value: v,
-		}
-
-		switch typeMetric {
+		switch m.MType {
 		case storage.Gauge:
 			_ = repo.AddGauge(m)
 		case storage.Counter:
 			_ = repo.AddCounter(m)
 		}
+		result, err := json.MarshalIndent(metrics.Metrics{
+			ID:    m.ID,
+			MType: m.MType,
+			Value: m.Value,
+			Delta: m.Delta,
+		}, "", " ")
 
-		w.Header().Set("Content-Type", "text/plain")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		w.WriteHeader(http.StatusOK)
+		w.Write(result)
 	}
 }
 
 func GetSpecificMetric(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		typeMetric := chi.URLParam(r, "type")
-		name := chi.URLParam(r, "name")
-
-		switch typeMetric {
+		var m metrics.Metrics
+		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
+		switch m.MType {
 		case storage.Gauge:
-			v, err := repo.GetGauge(name)
+			v, err := repo.GetGauge(m.ID)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			b, err := json.Marshal(v)
+			r := metrics.Metrics{
+				ID:    m.ID,
+				MType: m.MType,
+				Value: &v,
+			}
+			b, err := json.Marshal(r)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -72,12 +75,17 @@ func GetSpecificMetric(repo Repository) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			w.Write(b)
 		case storage.Counter:
-			v, err := repo.GetCounter(name)
+			v, err := repo.GetCounter(m.ID)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			b, err := json.Marshal(v)
+			r := metrics.Metrics{
+				ID:    m.ID,
+				MType: m.MType,
+				Delta: &v,
+			}
+			b, err := json.Marshal(r)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -93,7 +101,6 @@ func GetSpecificMetric(repo Repository) http.HandlerFunc {
 
 func GetMetrics(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 		m, err := repo.GetAllMetrics()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
