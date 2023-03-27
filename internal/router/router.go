@@ -15,7 +15,6 @@ func NewRouter() chi.Router {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-
 	r.Get("/", handlers.MiddlewareJson(handlers.GetMetrics(m)))
 	r.Post("/update/", handlers.MiddlewareJson(handlers.RecordMetrics(m)))
 	r.Post("/value/", handlers.MiddlewareJson(handlers.GetSpecificMetric(m)))
