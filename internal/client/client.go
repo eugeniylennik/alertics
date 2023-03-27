@@ -43,7 +43,7 @@ func (c *Client) SendMetrics(m metrics.ListMetrics) error {
 	addr := url.URL{
 		Scheme: "http",
 		Host:   host + ":" + port,
-		Path:   "/update/",
+		Path:   "/update",
 	}
 	for _, v := range m {
 		b, err := json.Marshal(v)

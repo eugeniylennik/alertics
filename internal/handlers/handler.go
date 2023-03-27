@@ -15,11 +15,11 @@ type Repository interface {
 	GetAllMetrics() ([]byte, error)
 }
 
-func MiddlewareJson(next http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func MiddlewareJson(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
-	}
+	})
 }
 
 func RecordMetrics(repo Repository) http.HandlerFunc {
@@ -34,16 +34,12 @@ func RecordMetrics(repo Repository) http.HandlerFunc {
 		case storage.Counter:
 			_ = repo.AddCounter(m)
 		}
-		result, err := json.MarshalIndent(metrics.Metrics{
-			ID:    m.ID,
-			MType: m.MType,
-			Value: m.Value,
-			Delta: m.Delta,
-		}, "", " ")
 
+		result, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
+
 		w.WriteHeader(http.StatusOK)
 		w.Write(result)
 	}
@@ -67,7 +63,7 @@ func GetSpecificMetric(repo Repository) http.HandlerFunc {
 				MType: m.MType,
 				Value: &v,
 			}
-			b, err := json.Marshal(r)
+			b, err := json.MarshalIndent(r, "", " ")
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
@@ -85,7 +81,7 @@ func GetSpecificMetric(repo Repository) http.HandlerFunc {
 				MType: m.MType,
 				Delta: &v,
 			}
-			b, err := json.Marshal(r)
+			b, err := json.MarshalIndent(r, "", " ")
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				return
