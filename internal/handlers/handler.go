@@ -79,9 +79,12 @@ func RecordMetricsByJSON(repo Repository) http.HandlerFunc {
 		switch d.Type {
 		case storage.Gauge:
 			_ = repo.AddGauge(d)
+			*m.Value, _ = repo.GetGauge(d.Name)
 		case storage.Counter:
 			_ = repo.AddCounter(d)
+			*m.Delta, _ = repo.GetCounter(d.Name)
 		}
+
 		result, err := json.MarshalIndent(m, "", " ")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
