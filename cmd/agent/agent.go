@@ -24,7 +24,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ch := make(chan []metrics.Data, 0)
+	ch := make(chan []metrics.Data)
 
 	go collectMetrics(ctx, ch)
 	go sendMetrics(ctx, c, ch)
