@@ -24,7 +24,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ch := make(chan metrics.ListMetrics)
+	ch := make(chan []metrics.Data, 0)
 
 	go collectMetrics(ctx, ch)
 	go sendMetrics(ctx, c, ch)
@@ -39,7 +39,7 @@ func main() {
 	}
 }
 
-func collectMetrics(ctx context.Context, ch chan metrics.ListMetrics) {
+func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
 	tPool := time.NewTicker(pollInterval)
 	defer tPool.Stop()
 
@@ -53,11 +53,11 @@ func collectMetrics(ctx context.Context, ch chan metrics.ListMetrics) {
 	}
 }
 
-func sendMetrics(ctx context.Context, c *client.Client, ch chan metrics.ListMetrics) {
+func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
 	tReport := time.NewTicker(reportInterval)
 	defer tReport.Stop()
 
-	var m metrics.ListMetrics
+	var m []metrics.Data
 	for {
 		select {
 		case newM := <-ch:

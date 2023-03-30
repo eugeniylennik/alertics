@@ -24,22 +24,22 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (ms *MemStorage) AddGauge(m metrics.Metrics) error {
+func (ms *MemStorage) AddGauge(m metrics.Data) error {
 	ms.mux.Lock()
 	defer ms.mux.Unlock()
-	if m.MType == Gauge {
-		ms.gauge[m.ID] = *m.Value
+	if m.Type == Gauge {
+		ms.gauge[m.Name] = m.Value
 	} else {
 		return errors.New("invalid metric type")
 	}
 	return nil
 }
 
-func (ms *MemStorage) AddCounter(m metrics.Metrics) error {
+func (ms *MemStorage) AddCounter(m metrics.Data) error {
 	ms.mux.Lock()
 	defer ms.mux.Unlock()
-	if m.MType == Counter {
-		ms.counter[m.ID] += *m.Delta
+	if m.Type == Counter {
+		ms.counter[m.Name] += int64(m.Value)
 	} else {
 		return errors.New("invalid metric type")
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/eugeniylennik/alertics/internal/metrics"
+	"github.com/eugeniylennik/alertics/internal/storage"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
@@ -36,8 +37,8 @@ func NewHTTPClient() (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SendMetrics(m metrics.ListMetrics) error {
-	if len(m) == 0 {
+func (c *Client) SendMetrics(d []metrics.Data) error {
+	if len(d) == 0 {
 		return nil
 	}
 	addr := url.URL{
@@ -45,8 +46,20 @@ func (c *Client) SendMetrics(m metrics.ListMetrics) error {
 		Host:   host + ":" + port,
 		Path:   "/update",
 	}
-	for _, v := range m {
-		b, err := json.Marshal(v)
+	for _, v := range d {
+		m := metrics.Metrics{
+			ID:    v.Name,
+			MType: v.Type,
+		}
+
+		if v.Type == storage.Gauge {
+			m.Value = &v.Value
+		} else {
+			i := int64(v.Value)
+			m.Delta = &i
+		}
+
+		b, err := json.Marshal(m)
 		if err != nil {
 			return err
 		}

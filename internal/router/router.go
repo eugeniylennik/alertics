@@ -16,10 +16,18 @@ func NewRouter() chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
-	r.Use(handlers.MiddlewareJson)
+	r.Use(handlers.MiddlewareJSON)
 
 	r.Get("/", handlers.GetMetrics(m))
-	r.Post("/update", handlers.RecordMetrics(m))
-	r.Post("/value", handlers.GetSpecificMetric(m))
+
+	r.Route("/update", func(r chi.Router) {
+		r.Post("/", handlers.RecordMetricsByJSON(m))
+		r.Post("/{type}/{name}/{value}", handlers.RecordMetrics(m))
+	})
+
+	r.Route("/value", func(r chi.Router) {
+		r.Post("/", handlers.GetSpecificMetricJSON(m))
+		r.Get("/{type}/{name}", handlers.GetSpecificMetric(m))
+	})
 	return r
 }
