@@ -28,7 +28,7 @@ func (ms *MemStorage) AddGauge(m metrics.Data) error {
 	ms.mux.Lock()
 	defer ms.mux.Unlock()
 	if m.Type == Gauge {
-		ms.gauge[m.Name] += m.Value
+		ms.gauge[m.Name] = m.Value
 	} else {
 		return errors.New("invalid metric type")
 	}
