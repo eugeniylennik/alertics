@@ -9,6 +9,7 @@ on:
       - iter2
       - iter3
       - iter4
+      - iter5
 
 jobs:
   devopstest:
@@ -302,7 +303,7 @@ jobs:
         run: |
           SERVER_PORT=$(random unused-port)
           ADDRESS="localhost:${SERVER_PORT}"
-          devopstest -test.v -test.run=^TestIteration5$ \
+          ./devopstest -test.v -test.run=^TestIteration5$ \
             -source-path=. \
             -agent-binary-path=cmd/agent/agent \
             -binary-path=cmd/server/server \

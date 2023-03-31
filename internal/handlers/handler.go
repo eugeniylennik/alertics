@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"github.com/go-chi/chi/v5"
+	"io"
 	"net/http"
 	"strconv"
 )
@@ -97,14 +99,23 @@ func RecordMetricsByJSON(repo Repository) http.HandlerFunc {
 
 func GetSpecificMetricJSON(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var m metrics.Metrics
-		if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
+
+		var m metrics.Metrics
+		if err := json.Unmarshal(b, &m); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		switch m.MType {
 		case storage.Gauge:
 			v, err := repo.GetGauge(m.ID)
 			if err != nil {
+				fmt.Println("ERROR", err)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -113,8 +124,10 @@ func GetSpecificMetricJSON(repo Repository) http.HandlerFunc {
 				MType: m.MType,
 				Value: &v,
 			}
-			b, err := json.MarshalIndent(r, "", " ")
+			b, err := json.Marshal(r)
 			if err != nil {
+				fmt.Println(string(b))
+				fmt.Println("ERROR: ", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -123,6 +136,7 @@ func GetSpecificMetricJSON(repo Repository) http.HandlerFunc {
 		case storage.Counter:
 			v, err := repo.GetCounter(m.ID)
 			if err != nil {
+				fmt.Println("ERROR: ", err)
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -131,8 +145,10 @@ func GetSpecificMetricJSON(repo Repository) http.HandlerFunc {
 				MType: m.MType,
 				Delta: &v,
 			}
-			b, err := json.MarshalIndent(r, "", " ")
+			b, err := json.Marshal(r)
 			if err != nil {
+				fmt.Println(string(b))
+				fmt.Println("ERROR: ", err)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -144,6 +160,7 @@ func GetSpecificMetricJSON(repo Repository) http.HandlerFunc {
 		}
 	}
 }
+
 func GetSpecificMetric(repo Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		typeMetric := chi.URLParam(r, "type")

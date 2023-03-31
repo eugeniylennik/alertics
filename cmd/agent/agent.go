@@ -11,11 +11,6 @@ import (
 	"time"
 )
 
-const (
-	pollInterval   = time.Second * 2
-	reportInterval = time.Second * 10
-)
-
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -40,7 +35,7 @@ func main() {
 }
 
 func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
-	tPool := time.NewTicker(pollInterval)
+	tPool := time.NewTicker(client.Config.PoolInterval)
 	defer tPool.Stop()
 
 	for {
@@ -54,7 +49,7 @@ func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
 }
 
 func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
-	tReport := time.NewTicker(reportInterval)
+	tReport := time.NewTicker(client.Config.ReportInterval)
 	defer tReport.Stop()
 
 	var m []metrics.Data

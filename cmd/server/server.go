@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/router"
 	"log"
 	"net/http"
@@ -10,11 +11,25 @@ import (
 	"syscall"
 )
 
+type Server struct {
+	Address string `env:"ADDRESS" envDefault:"localhost:8080"`
+}
+
+var Config Server
+
+func init() {
+	Config = Server{}
+	err := env.Parse(&Config)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
 	r := router.NewRouter()
 
 	s := &http.Server{
-		Addr:    "localhost:8080",
+		Addr:    Config.Address,
 		Handler: r,
 	}
 

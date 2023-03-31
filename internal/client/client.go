@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"log"
@@ -12,13 +13,24 @@ import (
 	"time"
 )
 
-const (
-	host = "127.0.0.1"
-	port = "8080"
-)
-
 type Client struct {
 	*http.Client
+}
+
+type Agent struct {
+	Address        string        `env:"ADDRESS" envDefault:"localhost:8080"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
+	PoolInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+}
+
+var Config Agent
+
+func init() {
+	Config = Agent{}
+	err := env.Parse(&Config)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func NewHTTPClient() (*Client, error) {
@@ -43,7 +55,7 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 	}
 	addr := url.URL{
 		Scheme: "http",
-		Host:   host + ":" + port,
+		Host:   Config.Address,
 		Path:   "/update",
 	}
 	for _, v := range d {
@@ -82,6 +94,5 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 			}
 		}()
 	}
-
 	return nil
 }
