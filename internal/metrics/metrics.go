@@ -25,11 +25,9 @@ func CollectMetrics() []Data {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
-	metrics := make([]Data, 27)
-
 	inc++
 	// Create a slice of metrics.
-	metrics = []Data{
+	metrics := []Data{
 		{Name: "Alloc", Type: "gauge", Value: float64(memStats.Alloc)},
 		{Name: "BuckHashSys", Type: "gauge", Value: float64(memStats.BuckHashSys)},
 		{Name: "Frees", Type: "gauge", Value: float64(memStats.Frees)},
