@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
-	"log"
 	"sync"
 )
 
@@ -48,9 +47,7 @@ func (ms *MemStorage) AddCounter(m metrics.Data) error {
 }
 
 func (ms *MemStorage) GetGauge(name string) (float64, error) {
-	log.Println("GETTING - ", name)
 	v, ok := ms.gauge[name]
-	log.Println("VALUE - ", v)
 	if !ok {
 		return 0, fmt.Errorf("metric %s not found", name)
 	}
@@ -58,9 +55,7 @@ func (ms *MemStorage) GetGauge(name string) (float64, error) {
 }
 
 func (ms *MemStorage) GetCounter(name string) (int64, error) {
-	log.Println("GETTING - ", name)
 	v, ok := ms.counter[name]
-	log.Println("VALUE - ", v)
 	if !ok {
 		return 0, fmt.Errorf("metric %s not found", name)
 	}

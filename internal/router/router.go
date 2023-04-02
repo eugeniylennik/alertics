@@ -7,9 +7,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func NewRouter() chi.Router {
+func NewRouter(store *storage.MemStorage) chi.Router {
 	r := chi.NewRouter()
-	m := storage.NewMemStorage()
 	r.Use(middleware.DefaultLogger)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -18,16 +17,16 @@ func NewRouter() chi.Router {
 	r.Use(middleware.StripSlashes)
 	r.Use(handlers.MiddlewareJSON)
 
-	r.Get("/", handlers.GetMetrics(m))
+	r.Get("/", handlers.GetMetrics(store))
 
 	r.Route("/update", func(r chi.Router) {
-		r.Post("/", handlers.RecordMetricsByJSON(m))
-		r.Post("/{type}/{name}/{value}", handlers.RecordMetrics(m))
+		r.Post("/", handlers.RecordMetricsByJSON(store))
+		r.Post("/{type}/{name}/{value}", handlers.RecordMetrics(store))
 	})
 
 	r.Route("/value", func(r chi.Router) {
-		r.Post("/", handlers.GetSpecificMetricJSON(m))
-		r.Get("/{type}/{name}", handlers.GetSpecificMetric(m))
+		r.Post("/", handlers.GetSpecificMetricJSON(store))
+		r.Get("/{type}/{name}", handlers.GetSpecificMetric(store))
 	})
 	return r
 }
