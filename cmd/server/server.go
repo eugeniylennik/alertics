@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/router"
 	"github.com/eugeniylennik/alertics/internal/storage"
@@ -10,24 +11,52 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 )
 
 type Server struct {
 	Address       string        `env:"ADDRESS" envDefault:"localhost:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"5s"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
 	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
 }
+
+var (
+	address       = flag.String("a", "localhost:4343", "server address")
+	restore       = flag.Bool("r", false, "restore value")
+	storeInterval = flag.Duration("i", 1*time.Second, "store interval")
+	storeFile     = flag.String("f", "debug.json", "store file")
+)
 
 var Config Server
 
 func init() {
 	Config = Server{}
+
+	flag.Parse()
 	err := env.Parse(&Config)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if Config.Address = os.Getenv("ADDRESS"); Config.Address == "" {
+		Config.Address = *address
+	}
+
+	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
+		if Config.StoreInterval, err = time.ParseDuration(envStoreInterval); err != nil {
+			Config.StoreInterval = *storeInterval
+		}
+	}
+	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
+		if Config.Restore, err = strconv.ParseBool(envRestore); err != nil {
+			Config.Restore = *restore
+		}
+	}
+	if Config.StoreFile = os.Getenv("STORE_FILE"); Config.StoreFile == "" {
+		Config.StoreFile = *storeFile
 	}
 }
 
@@ -72,7 +101,9 @@ func main() {
 			log.Printf("HTTP server shutdown error: %v\n", err)
 			os.Exit(1)
 		} else {
-			//collectMetricsToFile(ctx, store)
+			if err := collectMetricsToFile(ctx, store); err != nil {
+				log.Printf("Error while collecting metrics\n")
+			}
 			log.Printf("HTTP server gracefully stopped\n")
 		}
 	}
