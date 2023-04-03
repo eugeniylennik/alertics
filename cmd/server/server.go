@@ -24,10 +24,10 @@ type Server struct {
 }
 
 var (
-	address       = flag.String("a", "localhost:4343", "server address")
-	restore       = flag.Bool("r", false, "restore value")
-	storeInterval = flag.Duration("i", 1*time.Second, "store interval")
-	storeFile     = flag.String("f", "debug.json", "store file")
+	address       = flag.String("a", "localhost:8080", "server address")
+	restore       = flag.Bool("r", true, "restore value")
+	storeInterval = flag.Duration("i", 300*time.Second, "store interval")
+	storeFile     = flag.String("f", "/tmp/devops-metrics-db.json", "store file")
 )
 
 var Config Server

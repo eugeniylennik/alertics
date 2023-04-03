@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -23,6 +25,12 @@ type Agent struct {
 	PoolInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
 }
 
+var (
+	address        = flag.String("a", "localhost:8080", "server address")
+	reportInterval = flag.Duration("r", 10*time.Second, "report interval")
+	poolInterval   = flag.Duration("p", 2*time.Second, "pool interval")
+)
+
 var Config Agent
 
 func init() {
@@ -30,6 +38,22 @@ func init() {
 	err := env.Parse(&Config)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if Config.Address = os.Getenv("ADDRESS"); Config.Address == "" {
+		Config.Address = *address
+	}
+
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+		if Config.ReportInterval, err = time.ParseDuration(envReportInterval); err != nil {
+			Config.ReportInterval = *reportInterval
+		}
+	}
+
+	if envPoolInterval := os.Getenv("POLL_INTERVAL"); envPoolInterval != "" {
+		if Config.PoolInterval, err = time.ParseDuration(envPoolInterval); err != nil {
+			Config.PoolInterval = *poolInterval
+		}
 	}
 }
 
