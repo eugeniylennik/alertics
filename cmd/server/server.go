@@ -2,70 +2,24 @@ package main
 
 import (
 	"context"
-	"flag"
-	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/router"
+	"github.com/eugeniylennik/alertics/internal/server"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"github.com/eugeniylennik/alertics/internal/storage/file"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 )
-
-type Server struct {
-	Address       string        `env:"ADDRESS" envDefault:"localhost:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
-	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore       bool          `env:"RESTORE" envDefault:"true"`
-}
-
-var (
-	address       = flag.String("a", "localhost:8080", "server address")
-	restore       = flag.Bool("r", true, "restore value")
-	storeInterval = flag.Duration("i", 300*time.Second, "store interval")
-	storeFile     = flag.String("f", "/tmp/devops-metrics-db.json", "store file")
-)
-
-var Config Server
-
-func init() {
-	Config = Server{}
-
-	flag.Parse()
-	err := env.Parse(&Config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if Config.Address = os.Getenv("ADDRESS"); Config.Address == "" {
-		Config.Address = *address
-	}
-
-	if envStoreInterval := os.Getenv("STORE_INTERVAL"); envStoreInterval != "" {
-		if Config.StoreInterval, err = time.ParseDuration(envStoreInterval); err != nil {
-			Config.StoreInterval = *storeInterval
-		}
-	}
-	if envRestore := os.Getenv("RESTORE"); envRestore != "" {
-		if Config.Restore, err = strconv.ParseBool(envRestore); err != nil {
-			Config.Restore = *restore
-		}
-	}
-	if Config.StoreFile = os.Getenv("STORE_FILE"); Config.StoreFile == "" {
-		Config.StoreFile = *storeFile
-	}
-}
 
 func main() {
 	store := storage.NewMemStorage()
 	r := router.NewRouter(store)
 
 	s := &http.Server{
-		Addr:    Config.Address,
+		Addr:    server.Config.Address,
 		Handler: r,
 	}
 
@@ -101,19 +55,16 @@ func main() {
 			log.Printf("HTTP server shutdown error: %v\n", err)
 			os.Exit(1)
 		} else {
-			if err := collectMetricsToFile(ctx, store); err != nil {
-				log.Printf("Error while collecting metrics\n")
-			}
 			log.Printf("HTTP server gracefully stopped\n")
 		}
 	}
 }
 
 func collectMetricsToFile(ctx context.Context, store *storage.MemStorage) error {
-	interval := time.NewTicker(Config.StoreInterval)
+	interval := time.NewTicker(server.Config.StoreInterval)
 	defer interval.Stop()
 
-	w, err := file.NewWriter(Config.StoreFile)
+	w, err := file.NewWriter(server.Config.StoreFile)
 	if err != nil {
 		return err
 	}
@@ -135,8 +86,8 @@ func collectMetricsToFile(ctx context.Context, store *storage.MemStorage) error 
 }
 
 func restoreMetrics(store *storage.MemStorage) error {
-	if Config.Restore {
-		r, err := file.NewReader(Config.StoreFile)
+	if server.Config.Restore {
+		r, err := file.NewReader(server.Config.StoreFile)
 		if err != nil {
 			return err
 		}
