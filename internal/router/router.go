@@ -16,6 +16,7 @@ func NewRouter(store *storage.MemStorage) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 	r.Use(handlers.MiddlewareJSON)
+	r.Use(handlers.GzipHandle)
 
 	r.Get("/", handlers.GetMetrics(store))
 

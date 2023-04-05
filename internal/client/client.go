@@ -108,6 +108,7 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 			return err
 		}
 		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Accept-Encoding", "gzip")
 		resp, err := c.Do(req)
 		if err != nil {
 			return err
