@@ -1,15 +1,24 @@
 package metrics
 
-import "runtime"
+import (
+	"runtime"
+)
 
 var (
-	inc = 0
+	inc int64 = 0
 )
 
 type Data struct {
 	Name  string  `json:"name"`
 	Type  string  `json:"type"`
 	Value float64 `json:"value"`
+}
+
+type Metrics struct {
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }
 
 func CollectMetrics() []Data {
@@ -44,7 +53,6 @@ func CollectMetrics() []Data {
 		{Name: "StackSys", Type: "gauge", Value: float64(memStats.StackSys)},
 		{Name: "Sys", Type: "gauge", Value: float64(memStats.Sys)},
 		{Name: "TotalAlloc", Type: "gauge", Value: float64(memStats.TotalAlloc)},
-
 		{Name: "PollCount", Type: "counter", Value: float64(inc)},
 		{Name: "RandomValue", Type: "gauge", Value: float64(memStats.TotalAlloc)},
 	}

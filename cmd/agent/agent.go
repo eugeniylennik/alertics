@@ -11,15 +11,12 @@ import (
 	"time"
 )
 
-const (
-	pollInterval   = time.Second * 2
-	reportInterval = time.Second * 10
-)
+var cfg = client.InitConfigAgent()
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	c, err := client.NewHTTPClient()
+	c, err := client.NewHTTPClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,7 +37,7 @@ func main() {
 }
 
 func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
-	tPool := time.NewTicker(pollInterval)
+	tPool := time.NewTicker(cfg.PoolInterval)
 	defer tPool.Stop()
 
 	for {
@@ -54,7 +51,7 @@ func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
 }
 
 func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
-	tReport := time.NewTicker(reportInterval)
+	tReport := time.NewTicker(cfg.ReportInterval)
 	defer tReport.Stop()
 
 	var m []metrics.Data
@@ -63,7 +60,7 @@ func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) 
 		case newM := <-ch:
 			m = newM
 		case <-tReport.C:
-			if err := c.SendMetrics(ctx, m); err != nil {
+			if err := c.SendMetrics(m); err != nil {
 				log.Fatal(err)
 			}
 			m = nil
