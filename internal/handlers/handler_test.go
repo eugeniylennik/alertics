@@ -2,6 +2,7 @@ package handlers_test
 
 import (
 	"github.com/eugeniylennik/alertics/internal/router"
+	"github.com/eugeniylennik/alertics/internal/server"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,8 @@ import (
 )
 
 func TestHandler_RecordMetrics(t *testing.T) {
-	m := storage.NewMemStorage()
+	cfg := server.InitConfigServer()
+	m := storage.NewMemStorage(cfg)
 	r := router.NewRouter(m)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
