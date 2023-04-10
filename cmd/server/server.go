@@ -17,7 +17,7 @@ import (
 var cfg = server.InitConfigServer()
 
 func main() {
-	store := storage.NewMemStorage(cfg)
+	store := storage.NewMemStorage(cfg.StoreFile, cfg.StoreInterval == 0)
 	r := router.NewRouter(store)
 
 	s := &http.Server{

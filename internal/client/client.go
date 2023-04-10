@@ -45,13 +45,13 @@ func InitConfigAgent() *Agent {
 		cfg.Address = *address
 	}
 
-	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval == "" {
 		if cfg.ReportInterval, err = time.ParseDuration(envReportInterval); err != nil {
 			cfg.ReportInterval = *reportInterval
 		}
 	}
 
-	if envPoolInterval := os.Getenv("POLL_INTERVAL"); envPoolInterval != "" {
+	if envPoolInterval := os.Getenv("POLL_INTERVAL"); envPoolInterval == "" {
 		if cfg.PoolInterval, err = time.ParseDuration(envPoolInterval); err != nil {
 			cfg.PoolInterval = *poolInterval
 		}

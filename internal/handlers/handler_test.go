@@ -14,7 +14,7 @@ import (
 
 func TestHandler_RecordMetrics(t *testing.T) {
 	cfg := server.InitConfigServer()
-	m := storage.NewMemStorage(cfg)
+	m := storage.NewMemStorage(cfg.StoreFile, cfg.StoreInterval == 0)
 	r := router.NewRouter(m)
 	ts := httptest.NewServer(r)
 	defer ts.Close()

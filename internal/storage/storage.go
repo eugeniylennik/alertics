@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/eugeniylennik/alertics/internal/metrics"
-	"github.com/eugeniylennik/alertics/internal/server"
 	"github.com/eugeniylennik/alertics/internal/storage/file"
 	"log"
 	"sync"
@@ -22,15 +21,15 @@ type MemStorage struct {
 	writer        *file.Writer
 }
 
-func NewMemStorage(cfg *server.Server) *MemStorage {
-	w, err := file.NewWriter(cfg.StoreFile)
+func NewMemStorage(fileName string, isStoreToFile bool) *MemStorage {
+	w, err := file.NewWriter(fileName)
 	if err != nil {
 		log.Println(err)
 	}
 	return &MemStorage{
 		gauge:         map[string]float64{},
 		counter:       map[string]int64{},
-		isStoreToFile: cfg.StoreInterval == 0,
+		isStoreToFile: isStoreToFile,
 		writer:        w,
 	}
 }
