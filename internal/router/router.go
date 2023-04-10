@@ -18,7 +18,7 @@ func NewRouter(store *storage.MemStorage) chi.Router {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.StripSlashes)
 
-	r.Use(mw.ContentJson)
+	r.Use(mw.ContentTypeJSON)
 	r.Use(mw.CompressGzip)
 	r.Use(mw.DecompressGzip)
 
