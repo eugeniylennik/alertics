@@ -16,6 +16,7 @@ import (
 )
 
 type Client struct {
+	Config *Agent
 	*http.Client
 }
 
@@ -31,39 +32,42 @@ var (
 	poolInterval   = flag.Duration("p", 2*time.Second, "pool interval")
 )
 
-var Config Agent
+func InitConfigAgent() *Agent {
+	cfg := &Agent{}
 
-func init() {
-	Config = Agent{}
-	err := env.Parse(&Config)
+	flag.Parse()
+	err := env.Parse(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if Config.Address = os.Getenv("ADDRESS"); Config.Address == "" {
-		Config.Address = *address
+	if cfg.Address = os.Getenv("ADDRESS"); cfg.Address == "" {
+		cfg.Address = *address
 	}
 
 	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
-		if Config.ReportInterval, err = time.ParseDuration(envReportInterval); err != nil {
-			Config.ReportInterval = *reportInterval
+		if cfg.ReportInterval, err = time.ParseDuration(envReportInterval); err != nil {
+			cfg.ReportInterval = *reportInterval
 		}
 	}
 
 	if envPoolInterval := os.Getenv("POLL_INTERVAL"); envPoolInterval != "" {
-		if Config.PoolInterval, err = time.ParseDuration(envPoolInterval); err != nil {
-			Config.PoolInterval = *poolInterval
+		if cfg.PoolInterval, err = time.ParseDuration(envPoolInterval); err != nil {
+			cfg.PoolInterval = *poolInterval
 		}
 	}
+
+	return cfg
 }
 
-func NewHTTPClient() (*Client, error) {
+func NewHTTPClient(cfg *Agent) (*Client, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return &Client{}, err
 	}
 	return &Client{
-		&http.Client{
+		Config: cfg,
+		Client: &http.Client{
 			Timeout: time.Second * 5,
 			Transport: &http.Transport{
 				MaxIdleConns: 20,
@@ -79,7 +83,7 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 	}
 	addr := url.URL{
 		Scheme: "http",
-		Host:   Config.Address,
+		Host:   c.Config.Address,
 		Path:   "/update",
 	}
 	for _, v := range d {

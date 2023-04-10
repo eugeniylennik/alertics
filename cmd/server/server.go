@@ -14,12 +14,14 @@ import (
 	"time"
 )
 
+var cfg = server.InitConfigServer()
+
 func main() {
-	store := storage.NewMemStorage()
+	store := storage.NewMemStorage(cfg)
 	r := router.NewRouter(store)
 
 	s := &http.Server{
-		Addr:    server.Config.Address,
+		Addr:    cfg.Address,
 		Handler: r,
 	}
 
@@ -61,33 +63,36 @@ func main() {
 }
 
 func collectMetricsToFile(ctx context.Context, store *storage.MemStorage) error {
-	interval := time.NewTicker(server.Config.StoreInterval)
-	defer interval.Stop()
+	if cfg.StoreInterval != 0 {
+		interval := time.NewTicker(cfg.StoreInterval)
+		defer interval.Stop()
 
-	w, err := file.NewWriter(server.Config.StoreFile)
-	if err != nil {
-		return err
-	}
+		w, err := file.NewWriter(cfg.StoreFile)
+		if err != nil {
+			return err
+		}
 
-	for {
-		select {
-		case <-interval.C:
-			mBz, err := store.GetAllMetrics()
-			if err != nil {
-				return err
+		for {
+			select {
+			case <-interval.C:
+				mBz, err := store.GetAllMetrics()
+				if err != nil {
+					return err
+				}
+				if err := w.WriteMetrics(mBz); err != nil {
+					return err
+				}
+			case <-ctx.Done():
+				return nil
 			}
-			if err := w.WriteMetrics(mBz); err != nil {
-				return err
-			}
-		case <-ctx.Done():
-			return nil
 		}
 	}
+	return nil
 }
 
 func restoreMetrics(store *storage.MemStorage) error {
-	if server.Config.Restore {
-		r, err := file.NewReader(server.Config.StoreFile)
+	if cfg.Restore {
+		r, err := file.NewReader(cfg.StoreFile)
 		if err != nil {
 			return err
 		}

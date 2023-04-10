@@ -11,10 +11,12 @@ import (
 	"time"
 )
 
+var cfg = client.InitConfigAgent()
+
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	c, err := client.NewHTTPClient()
+	c, err := client.NewHTTPClient(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +37,7 @@ func main() {
 }
 
 func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
-	tPool := time.NewTicker(client.Config.PoolInterval)
+	tPool := time.NewTicker(cfg.PoolInterval)
 	defer tPool.Stop()
 
 	for {
@@ -49,7 +51,7 @@ func collectMetrics(ctx context.Context, ch chan []metrics.Data) {
 }
 
 func sendMetrics(ctx context.Context, c *client.Client, ch chan []metrics.Data) {
-	tReport := time.NewTicker(client.Config.ReportInterval)
+	tReport := time.NewTicker(cfg.ReportInterval)
 	defer tReport.Stop()
 
 	var m []metrics.Data
