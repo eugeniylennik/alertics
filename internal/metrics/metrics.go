@@ -1,6 +1,10 @@
 package metrics
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"runtime"
 )
 
@@ -19,6 +23,7 @@ type Metrics struct {
 	MType string   `json:"type"`
 	Delta *int64   `json:"delta,omitempty"`
 	Value *float64 `json:"value,omitempty"`
+	Hash  string   `json:"hash,omitempty"`
 }
 
 func CollectMetrics() []Data {
@@ -58,4 +63,29 @@ func CollectMetrics() []Data {
 	}
 
 	return metrics
+}
+
+func (m Metrics) IsHashesEquals() (bool, error) {
+	h := hmac.New(sha256.New, []byte("key"))
+
+	data, err := hex.DecodeString(m.Hash)
+	if err != nil {
+		return false, err
+	}
+
+	var msg string
+	if m.MType == "counter" {
+		msg = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+	} else {
+		msg = fmt.Sprintf("%s:gauge:%.f", m.ID, *m.Value)
+	}
+
+	h.Write([]byte(msg))
+	sign := h.Sum(nil)
+
+	if hmac.Equal(sign, data) {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }

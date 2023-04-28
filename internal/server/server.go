@@ -14,13 +14,17 @@ type Server struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
 	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
 	Restore       bool          `env:"RESTORE" envDefault:"false"`
+	Key           string        `env:"KEY" envDefault:"key"`
+	Dsn           string        `env:"DATABASE_DSN" envDefault:"postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable"`
 }
 
 var (
 	address       = flag.String("a", "localhost:8080", "server address")
 	restore       = flag.Bool("r", false, "restore value")
-	storeInterval = flag.Duration("i", 0*time.Second, "store interval")
+	storeInterval = flag.Duration("i", 300*time.Second, "store interval")
 	storeFile     = flag.String("f", "/tmp/devops-metrics-db.json", "store file")
+	key           = flag.String("k", "key", "key secret")
+	dsn           = flag.String("d", "postgres://postgres:postgres@localhost:5432/praktikum?sslmode=disable", "dsn")
 )
 
 func InitConfigServer() *Server {
@@ -50,6 +54,14 @@ func InitConfigServer() *Server {
 
 	if cfg.StoreFile = os.Getenv("STORE_FILE"); cfg.StoreFile == "" {
 		cfg.StoreFile = *storeFile
+	}
+
+	if envHash := os.Getenv("KEY"); envHash == "" {
+		cfg.Key = *key
+	}
+
+	if envDsn := os.Getenv("DATABASE_DSN"); envDsn == "" {
+		cfg.Dsn = *dsn
 	}
 
 	return cfg

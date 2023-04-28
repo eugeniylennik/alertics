@@ -2,8 +2,12 @@ package client
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"github.com/caarlos0/env/v7"
 	"github.com/eugeniylennik/alertics/internal/metrics"
 	"github.com/eugeniylennik/alertics/internal/storage"
@@ -24,12 +28,14 @@ type Agent struct {
 	Address        string        `env:"ADDRESS" envDefault:"localhost:8080"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
 	PoolInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	Key            string        `env:"KEY" envDefault:"key"`
 }
 
 var (
 	address        = flag.String("a", "localhost:8080", "server address")
 	reportInterval = flag.Duration("r", 10*time.Second, "report interval")
 	poolInterval   = flag.Duration("p", 2*time.Second, "pool interval")
+	key            = flag.String("k", "key", "key secret")
 )
 
 func InitConfigAgent() *Agent {
@@ -55,6 +61,10 @@ func InitConfigAgent() *Agent {
 		if cfg.PoolInterval, err = time.ParseDuration(envPoolInterval); err != nil {
 			cfg.PoolInterval = *poolInterval
 		}
+	}
+
+	if envHash := os.Getenv("KEY"); envHash == "" {
+		cfg.Key = *key
 	}
 
 	return cfg
@@ -86,6 +96,7 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 		Host:   c.Config.Address,
 		Path:   "/update",
 	}
+
 	for _, v := range d {
 		m := metrics.Metrics{
 			ID:    v.Name,
@@ -97,6 +108,10 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 		} else {
 			i := int64(v.Value)
 			m.Delta = &i
+		}
+
+		if c.Config.Key != "" {
+			m.Hash = generateHash(m, c.Config.Key)
 		}
 
 		b, err := json.Marshal(m)
@@ -124,4 +139,19 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 		}()
 	}
 	return nil
+}
+
+func generateHash(m metrics.Metrics, k string) string {
+	h := hmac.New(sha256.New, []byte(k))
+
+	var msg string
+	if m.MType == storage.Counter {
+		msg = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+	} else {
+		msg = fmt.Sprintf("%s:gauge:%.f", m.ID, *m.Value)
+	}
+
+	h.Write([]byte(msg))
+
+	return hex.EncodeToString(h.Sum(nil))
 }
