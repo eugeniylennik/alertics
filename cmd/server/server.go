@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/eugeniylennik/alertics/internal/database"
 	"github.com/eugeniylennik/alertics/internal/router"
 	"github.com/eugeniylennik/alertics/internal/server"
 	"github.com/eugeniylennik/alertics/internal/storage"
@@ -18,7 +19,13 @@ var cfg = server.InitConfigServer()
 
 func main() {
 	store := storage.NewMemStorage(cfg.StoreFile, cfg.StoreInterval == 0)
-	r := router.NewRouter(store)
+
+	client, err := database.NewClient(context.TODO(), 5, cfg.Dsn)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	r := router.NewRouter(store, client)
 
 	s := &http.Server{
 		Addr:    cfg.Address,
@@ -63,7 +70,7 @@ func main() {
 }
 
 func collectMetricsToFile(ctx context.Context, store *storage.MemStorage) error {
-	if cfg.StoreInterval != 0 {
+	if cfg.StoreInterval != 0 && cfg.Dsn != "" {
 		interval := time.NewTicker(cfg.StoreInterval)
 		defer interval.Stop()
 
