@@ -34,8 +34,12 @@ func NewRouter(store *storage.MemStorage, db *pgxpool.Pool) chi.Router {
 		r.Post("/{type}/{name}/{value}", handlers.RecordMetrics(store))
 	})
 
+	r.Route("/updates", func(r chi.Router) {
+		r.Post("/", handlers.RecordMetricsBatch(dbStore))
+	})
+
 	r.Route("/value", func(r chi.Router) {
-		r.Post("/", handlers.GetSpecificMetricJSON(store))
+		r.Post("/", handlers.GetSpecificMetricJSON(store, dbStore))
 		r.Get("/{type}/{name}", handlers.GetSpecificMetric(store))
 	})
 	return r

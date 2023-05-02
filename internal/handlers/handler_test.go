@@ -1,12 +1,15 @@
 package handlers_test
 
 import (
+	"context"
+	"github.com/eugeniylennik/alertics/internal/database"
 	"github.com/eugeniylennik/alertics/internal/router"
 	"github.com/eugeniylennik/alertics/internal/server"
 	"github.com/eugeniylennik/alertics/internal/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +18,11 @@ import (
 func TestHandler_RecordMetrics(t *testing.T) {
 	cfg := server.InitConfigServer()
 	m := storage.NewMemStorage(cfg.StoreFile, cfg.StoreInterval == 0)
-	r := router.NewRouter(m)
+	client, err := database.NewClient(context.TODO(), 5, cfg.Dsn)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	r := router.NewRouter(m, client)
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 

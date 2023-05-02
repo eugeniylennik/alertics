@@ -118,6 +118,7 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 		if err != nil {
 			return err
 		}
+
 		req, err := http.NewRequest(
 			http.MethodPost,
 			addr.String(),
@@ -138,6 +139,64 @@ func (c *Client) SendMetrics(d []metrics.Data) error {
 			}
 		}()
 	}
+	return nil
+}
+
+func (c *Client) SendMetricsBatch(d []metrics.Data) error {
+	if len(d) == 0 {
+		return nil
+	}
+	addr := url.URL{
+		Scheme: "http",
+		Host:   c.Config.Address,
+		Path:   "/updates",
+	}
+
+	result := make([]metrics.Metrics, len(d))
+
+	for i, v := range d {
+		m := metrics.Metrics{
+			ID:    v.Name,
+			MType: v.Type,
+		}
+
+		if v.Type == storage.Gauge {
+			m.Value = &v.Value
+		} else {
+			i := int64(v.Value)
+			m.Delta = &i
+		}
+
+		if c.Config.Key != "" {
+			m.Hash = generateHash(m, c.Config.Key)
+		}
+
+		result[i] = m
+	}
+
+	b, err := json.Marshal(result)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(
+		http.MethodPost,
+		addr.String(),
+		bytes.NewBuffer(b),
+	)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip")
+	resp, err := c.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("error closing response body: %v", err)
+		}
+	}()
 	return nil
 }
 

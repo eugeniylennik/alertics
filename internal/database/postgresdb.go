@@ -44,7 +44,7 @@ func createTable(conn *pgxpool.Pool) error {
             type TEXT NOT NULL,
             delta BIGINT,
             value DOUBLE PRECISION,
-            hash TEXT UNIQUE
+            hash TEXT
         )
     `)
 	if err != nil {
